@@ -1,78 +1,146 @@
 # Título: Exercício 10
 # Autor: Nicolas Campana	
 # Data: 03/11/18
-# Descrição: Dados dois vetores x e y, ambos com n elementos, determinar o produto escalar desses vetores. 
-# Entrada: Nº de elementos dos vetores x e y e seus valores
+# Descrição: Dados dois vetores X e Y, ambos com n elementos, determinar o produto escalar desses vetores. 
+# Entrada: Nº de elementos dos vetores X e Y e seus valores
 # Output: Produto escalar dos vetores
 ################# Data segment #####################
 .data
-entrada1: .asciiz "Quantos elementos tem os vetores x e y? "
+entrada1: .asciiz "Quantos elementos tem os vetores X e Y? "
+pedeVetX: .asciiz "Entre com os elementos do vetor X:\n"
+pedeVetY: .asciiz "Entre com os elementos do vetor Y:\n"
+pedeElemento: .asciiz "Elemento "
+resultado: .asciiz "\nProduto escalar X * Y = "
+doisPontos: .asciiz ": "
 virgula: .asciiz ","
 vetor: .asciiz "Vetor: "
-parenteses1: .asciiz "("
-parenteses2: .asciiz ")"
+
 ################# Code segment #####################
 .text
 .globl main
 	main:	# main program entry
-		#Imprime a mensagem inicial do programa
-		la $a0, entrada1 # Carrega Mensagem
-		li $v0, 4 # Mostra Mensagem
+		#Solicita n ao usuário
+		la $a0, entrada1 	# Carrega Mensagem
+		li $v0, 4 		# Código para imprimir string
 		syscall 
-		li $v0, 5 # Recolhe a entrada do número de elementos dos vetores 
-		syscall
-		move $t0, $v0
 		
-		add $t6, $zero, $t0 # guarda t6 para dps
-		# T1 é o registrador base do primeiro vetor, x
-		mul $t1, $t0, -8
-		# T2 é o registrador base do segundo vetor, y
-		mul $t2, $t0, -8
+		#Lê n
+		li $v0, 5 		# Código para ler inteiro
+		syscall
+		move $s0, $v0  		# $s0 = n
 		
-	While: 
-		#Recebe os números dos vetores
-		beq $t0, $zero, Reset # Se i == 0, sai do loop
-		add $sp, $zero, $t1  # Ponteiro = controle de t1
-		addi $t0, $t0, -1    # i--
-		li $v0, 7            # Lê um numero
-		syscall             
-		mov.d $f2, $f0	     # move o valor lido para f2
-		s.d $f2, 0($sp)      # salva o número digitado no x[i]
-		addi $t1, $t1, 8      # decrementa ponteiro
-		li $v0, 7
+		#Alocando espaço para os vetores X e Y no heap
+		sll $a0, $s0, 3 	# $a0 = n * 8 = num de bytes necessários para armazenar n doubles
+		#Alocando espaço para o vetor X
+		li $v0, 9  		# Código para alocar espaço no heap
 		syscall
-		mov.d $f2, $f0       # move o lido para f2
-		add $sp, $zero, $t2  # recebe o ponteiro
-		s.d $f2, 0($sp)      # salva o número digitado no y[i]
-		addi $t2, $t2, 8      #decrementa ponteiro
-		j While
-	Reset:
-		mul $t1, $t6, -8     #volta os registradores ao inicio do array
-		mul $t2, $t6, -8     # "
-		la $a0, parenteses1
-		li $v0, 4
-		syscall
-	Mult:
-		beq $t6, $zero, Exit     #Se t6 (i) == 0, sai
-		addi $t6, $t6, -1       # i--
-		add $sp, $zero, $t1     # Ponteiro = t1 (x[i])
-		l.d $f2, 0($sp)		# Recupera prmeiro valor 
-		addi $t1, $t1, 8        # anda 1 posição
-		add $sp, $zero, $t2     # Pega t2
-		l.d $f4, 0($sp)         # recupera primeiro valor (y[i])
-		addi $t2, $t2, 8        # Anda 1 posição
-		mul.d $f6, $f2, $f4     # y[i] * x[i] 
-		mfc1 $a0, $f6           # joga f6 para saida
-		li $v0, 3               # Imprime f6
-		syscall
-		la $a0, virgula         # coloca virgula para parecer um vetor
-		li $v0, 4               
-		syscall
-		j Mult 
+		move $s1, $v0 		# $s1 = base do vetor X
 		
-	Exit:
-	la $a0, parenteses2            # coloca parenteses no final para terminar amontagem de um vetor
-	li $v0, 4
-	syscall
-	li $v0, 10	# Exit program
-	syscall
+		#Alocando espaço para o vetor Y
+		li $v0, 9 		# Código para alocar espaço no heap
+		syscall
+		move $s2, $v0 		# $s2 = base do vetor Y
+		
+		
+		#Solicita o vetor X
+		la $a0, pedeVetX	# Carrega a mensagem solicitando o vetor X
+		li $v0, 4		# Código para escrever uma string na tela
+		syscall
+		
+		#Preparando argumentos para para a leitura do vetor X
+		move $a1, $s0  		# $a1 = n
+		move $a2, $s1		# $a2 = base do vetor X
+		
+		#Lendo os elementos do vetor X
+		jal lerVetor
+		
+		#Solicita o vetor Y
+		la $a0, pedeVetY	# Carrega a mensagem solicitando o vetor Y
+		li $v0, 4		# Código para escrever uma string na tela
+		syscall
+		
+		#Preparando argumentos para para a leitura do vetor Y
+		move $a1, $s0  		# $a1 = n
+		move $a2, $s2		# $a2 = base do vetor Y
+		
+		#Lendo os elementos do vetor Y
+		jal lerVetor
+		
+		#Calculando o produto escalar X * Y
+		li $t0, 0 		# i = 0
+		sub.d $f2, $f2, $f2 	# f2 = prodEscalar = 0
+		ProdutoEscalar:
+			beq $t0, $s0, Exit    	# Se i == n, sai
+			
+			sll $t1, $t0, 3		# t1 = i * 8
+			
+			#Carregando X[i]
+			add $t2, $s1, $t1 	# t2 = pos de mem de X[i]
+			l.d $f4, 0($t2)		# f4 = X[i]
+			
+			#Carregando Y[i]
+			add $t2, $s2, $t1 	# t2 = pos de mem de Y[i]
+			l.d $f6, 0($t2)		# f6 = Y[i]
+			
+			#Calculando o produto escalar da iteração i
+			mul.d $f4, $f4, $f6	# f4 = X[i] * Y [i]
+			add.d $f2, $f2, $f4	# f2 += X[i] * Y [i] 
+			
+			#Incrementando o contador
+			addi $t0, $t0, 1 	#i++
+			
+			j ProdutoEscalar 
+		
+		Exit:
+			#Imprime a mensagem com o resultado do produto escalar X * Y
+			la $a0, resultado	#Carrega a msg 
+			li $v0, 4		#Código para imprimir uma string na tela           
+			syscall
+			mov.d $f12, $f2		#Prepara o valor do produto escalar para ser impresso
+			li $v0, 3		#Código para imprimir um double
+			syscall
+
+		#Encerra o programa						
+		li $v0, 10
+		syscall
+	
+	
+	
+	#Funçao que lê um vetor recebendo seu pelo valor em $a1 
+	#e a base do vetor em $a2
+	lerVetor:
+		li $t0, 0 			# $t0 = i = 0
+		loop:
+			beq $t0, $a1, saida 	# Saia do loop se i == n
+
+			#Solicita o elemento i do vetor
+			la $a0, pedeElemento	# Carrega a primeira parte da msg solicitando o elemento
+			li $v0, 4 		# Código para imprimir uma string na tela
+			syscall
+			addi $t1, $t0, 1	# $t1 = i + 1
+			move $a0, $t1		# carrega i + 1 para ser impresso
+			li $v0, 1		# Código para imprimir um inteiro na tela
+			syscall
+			la $a0, doisPontos	# Carrega a parte final da msg a ser impressa
+			li $v0, 4		# Código para imprimir uma string na tela
+			syscall
+			
+			#Lê o elemento digitado
+			li $v0, 7 		#Código para ler um double
+			syscall
+			#f0 contém o valor lido agora
+			
+			#Cálculo da posição do vetor a se armazenar o elemento lido
+			sll $t1, $t0, 3 	# $t1 = i * 8
+			add $t1, $a2, $t1	# t1 = baseDoVetor + i * 8
+			#t1 agora contém a posição a se armazenar o double lido
+			
+			#Armazenando o valor lido no vetor
+			s.d $f0, 0($t1) 	# vet[i] = valor lido
+			
+			addi $t0, $t0, 1	# i++
+			
+			j loop
+		saida:
+			jr $ra
+	
