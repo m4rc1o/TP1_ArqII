@@ -19,7 +19,7 @@ parenteses2: .asciiz ")"
 		la $a0, entrada1 # Carrega Mensagem
 		li $v0, 4 # Mostra Mensagem
 		syscall 
-		li $v0, 5 # Recolhe a mensagem
+		li $v0, 5 # Recolhe a entrada do número de elementos dos vetores 
 		syscall
 		move $t0, $v0
 		
