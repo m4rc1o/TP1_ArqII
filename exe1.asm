@@ -1,19 +1,16 @@
-# Title:	Filename:
-
-# Author:	Date:
-
-# Description:
-
-# Input:
-
-# Output:
+# Título: Exercício 1
+# Autor: Lucas Fiorini Braga 	
+# Data: 03/11/18
+# Descrição: Efetuar potência de dois numeros fornecidos pelo usuário
+# Entrada: Numero a ser elevado e qual potencia 
+# Output: Potencia entre os dois numeros
 
 ################# Data segment #####################
 
 .data
 
-descricao: .asciiz "Este programa calcula P(m,n)"
-pedeM: .asciiz "Digite o valor de m: "
+descricao: .asciiz "Este programa calcula P(m,n), "
+pedeM: .asciiz "digite o valor de m: "
 pedeN: .asciiz "Digite o valor de n: "
 resultado: .asciiz "P(m,n) = "
 
@@ -50,7 +47,13 @@ main:	# main program entry
 	move $a2, $v0 #a2 = N
 	
 	
-	jal PotenciaLoca
+	jal Potencia
+	
+	#Escreve indicador da reaposta de P(M,N)
+	la $a0, resultado
+	li $v0, 4
+	syscall 
+	
 	
 	#Mostra o resultado
 	move $a0, $v1
@@ -61,15 +64,15 @@ main:	# main program entry
 	syscall
 
 
-PotenciaLoca: 
+Potencia: 
 	addi $t0, $zero, 1
 	addi $t4, $zero, 1 # P(m,n) = 1
 	
 	Loop:
 		bgt  $t0, $a2, Exit
-		mul  $t4, $t4, $a1 # Multiplica os putao tudo
+		mul  $t4, $t4, $a1 # Multiplica M($a1) por P($t4)
 		addi $t0, $t0, 1 # ++i
-		j Loop #volta pros loop
+		j Loop #volta para o loop
 	Exit:
 	move $v1, $t4
-	jr $ra  
+	jr $ra  #Volta para onde foi chamado
